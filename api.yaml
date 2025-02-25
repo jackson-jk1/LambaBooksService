@@ -1,0 +1,41 @@
+openapi: "3.0.1"
+info:
+  title: "Minha API Privada"
+  version: "1.0"
+paths:
+  /books:
+    get:
+      summary: Obter lista de livros
+      description: Retorna uma lista de livros
+      responses:
+        200:
+          description: "Sucesso"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+        500:
+          description: "Erro Interno do Servidor"
+          content: {}
+      x-amazon-apigateway-integration:
+        uri: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:minha-funcao-lambda/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        author:
+          type: string
+        id:
+          type: string
+        title:
+          type: string

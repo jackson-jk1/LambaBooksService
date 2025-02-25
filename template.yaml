@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Deploy de um api gatway privado"
+
+Resources:
+  # Criando a VPC
+  MinhaVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"  # CIDR para a VPC
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: minha-vpc
+
+  # Criando a sub-rede privada        
+  MinhaSubredePrivada:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MinhaVPC
+      CidrBlock: "10.0.1.0/24"  # CIDR para sub-rede privada
+      AvailabilityZone: "us-east-1a"  # Substitua pela sua zona de disponibilidade
+      MapPublicIpOnLaunch: false  # Não atribui IP público às instâncias
+      Tags:
+        - Key: Name
+          Value: minha-subrede-privada
+
+  # Criando a tabela de rotas para a sub-rede privada
+  MinhaTabelaDeRotas:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MinhaVPC
+
+
+  # Criando o Security Group para o API Gateway
+  MeuSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: api-gateway-security-group
+      GroupDescription: Security Group para API Gateway
+      VpcId: !Ref MinhaVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: '10.0.0.0/16'  # Permite tráfego de dentro da VPC para a API Gateway
+          
+  # Criando um VPC Endpoint para API Gateway privado
+  VpcEndpointAPI:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: com.amazonaws.us-east-1.execute-api  # Serviço específico do API Gateway
+      VpcId: !Ref MinhaVPC
+      VpcEndpointType: Interface
+      SubnetIds:
+        - Ref: MinhaSubredePrivada  # A sub-rede onde o API Gateway vai operar
+      SecurityGroupIds:
+        - Ref: MeuSecurityGroup  # Security Group associado
+      PrivateDnsEnabled: true  # Habilita DNS privado
+      Tags:
+        - Key: Name
+          Value: vpc-endpoint-api-gateway
+
+  MinhaApiRestPrivada:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: minha-api-rest-privada
+      Description: API REST privada
+      FailOnWarnings: true
+      Body:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: "s3://my-lambda-jk/api.yaml" 
+      EndpointConfiguration:
+        Types:
+          - PRIVATE
+
+          
+  # Permissão para que o API Gateway invoque a Lambda
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: "lambda:InvokeFunction"
+      FunctionName: !ImportValue MinhaFuncaoLambdaArn
+      Principal: "apigateway.amazonaws.com"
+
