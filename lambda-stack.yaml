@@ -38,11 +38,18 @@ Resources:
                   - dynamodb:Query
                   - dynamodb:Scan
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: "arn:aws:ssm:us-east-1:381645837582:parameter/BooksTable"
 
   # Tabela DynamoDB para livros
   LivroTable:
     Type: "AWS::DynamoDB::Table"
     Properties:
+      TableName: "BooksTable"
       AttributeDefinitions:
         - AttributeName: "id"
           AttributeType: "S"
@@ -60,7 +67,7 @@ Resources:
     Properties:
       FunctionName: minha-funcao-lambda
       Runtime: dotnet6
-      Handler: HelloWorld::HelloWorld.Function::FunctionHandler
+      Handler: BookService.Functions.BookHandler::Handler
       Code:
         S3Bucket: my-lambda-jk
         S3Key: minha-lambda.zip
