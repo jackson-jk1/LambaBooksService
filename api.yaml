@@ -2,7 +2,8 @@ openapi: "3.0.1"
 info:
   title: "Minha API Privada"
   version: "1.0"
- /books:
+paths:
+  api/books:
     get:
       summary: Obter lista de livros
       description: Retorna uma lista de livros
@@ -54,36 +55,6 @@ info:
         type: "aws_proxy"
 
   /books/{id}:
-    get:
-      summary: Obter detalhes de um livro
-      description: Retorna um livro pelo ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: "Sucesso"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Book"
-        404:
-          description: "Livro não encontrado"
-        500:
-          description: "Erro Interno do Servidor"
-      x-amazon-apigateway-integration:
-        uri: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:minha-funcao-lambda/invocations
-        responses:
-          default:
-            statusCode: "200"
-        passthroughBehavior: "when_no_match"
-        httpMethod: "POST"
-        contentHandling: "CONVERT_TO_TEXT"
-        type: "aws_proxy"
-
     put:
       summary: Atualizar um livro existente
       description: Atualiza as informações de um livro pelo ID
@@ -143,25 +114,26 @@ info:
         httpMethod: "POST"
         contentHandling: "CONVERT_TO_TEXT"
         type: "aws_proxy"
+
 components:
- schemas:
-  Book:
-    type: object
-    properties:
-      id:
-        type: string
-        description: "Identificador único do livro"
-      name:
-        type: string
-        description: "Nome do livro"
-      author:
-        type: string
-        description: "Nome do autor"
-      publishedDate:
-        type: string
-        format: date
-        description: "Data de publicação do livro (YYYY-MM-DD)"
-    required:
-      - name
-      - author
-      - publishedDate
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "Identificador único do livro"
+        name:
+          type: string
+          description: "Nome do livro"
+        author:
+          type: string
+          description: "Nome do autor"
+        publishedDate:
+          type: string
+          format: date
+          description: "Data de publicação do livro (YYYY-MM-DD)"
+      required:
+        - name
+        - author
+        - publishedDate

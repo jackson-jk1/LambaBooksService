@@ -3,6 +3,7 @@ using Amazon.Lambda.Core;
 using BookService.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Amazon.SimpleSystemsManagement;
 
 namespace BookService
 {
@@ -11,7 +12,7 @@ namespace BookService
         public IServiceProvider ConfigureServices()
         {
             var services = new ServiceCollection();
-
+            services.AddAWSService<IAmazonSimpleSystemsManagement>();
             services.AddAWSService<IAmazonDynamoDB>();
             services.AddScoped<IBookRepository, BookRepository>();
             services.AddLogging();

@@ -3,10 +3,10 @@ Description: "Deploy de uma função Lambda simples usando CloudFormation"
 
 Resources:
 # Role que permite a Lambda acessar o S3 e escrever logs no CloudWatch
-  LambdaExecutionRoleV2:
+  LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: MinhaRoleLambdaV2
+      RoleName: MinhaRoleLambda
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -37,13 +37,16 @@ Resources:
                   - dynamodb:GetItem
                   - dynamodb:Query
                   - dynamodb:Scan
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateItem 
+                  - dynamodb:DeleteItem 
                 Resource: "*"
               - Effect: Allow
                 Action:
                   - ssm:GetParameter
                   - ssm:GetParameters
                   - ssm:GetParametersByPath
-                Resource: "arn:aws:ssm:us-east-1:381645837582:parameter/BooksTable"
+                Resource: "arn:aws:ssm:us-east-1:381645837582:parameter/BooksTable" 
 
   # Tabela DynamoDB para livros
   LivroTable:
@@ -51,10 +54,10 @@ Resources:
     Properties:
       TableName: "BooksTable"
       AttributeDefinitions:
-        - AttributeName: "id"
+        - AttributeName: "Id"
           AttributeType: "S"
       KeySchema:
-        - AttributeName: "id"
+        - AttributeName: "Id"
           KeyType: "HASH"
       ProvisionedThroughput:
         ReadCapacityUnits: 5
@@ -62,25 +65,28 @@ Resources:
   
 
   # Função Lambda
-  MinhaFuncaoLambdaV2:
+  MinhaFuncaoLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: minha-funcao-lambda
-      Runtime: dotnet6
-      Handler: BookService.Functions.BookHandler::Handler
+      Runtime: dotnet8
+      Handler: BookServiceLambda::BookService.Functions.BookHandler::Handler
       Code:
         S3Bucket: my-lambda-jk
         S3Key: minha-lambda.zip
-      Role: !GetAtt LambdaExecutionRoleV2.Arn
+      Role: !GetAtt LambdaExecutionRole.Arn
       MemorySize: 512
       Timeout: 10
-      Environment:
-        Variables:
-          PARAM1: "VALUE"
 
 Outputs:
-  LambdaArn:
+  MinhaFuncaoLambdaArn:
     Description: "ARN da Função Lambda"
-    Value: !GetAtt MinhaFuncaoLambdaV2.Arn
+    Value: !GetAtt MinhaFuncaoLambda.Arn
     Export:
       Name: MinhaFuncaoLambdaArn  # Nome do export para importar depois
+
+  MinhaRoleLambda:
+    Description: "ARN da Role Lambda"
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: MinhaRoleLambda

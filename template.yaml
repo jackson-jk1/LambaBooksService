@@ -60,7 +60,21 @@ Resources:
       Tags:
         - Key: Name
           Value: vpc-endpoint-api-gateway
-
+  
+  ApiGatewayInvokeLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: ApiGatewayInvokeLambdaPolicy
+      Roles: 
+        - MinhaRoleLambda
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !ImportValue MinhaFuncaoLambdaArn
+            
   MinhaApiRestPrivada:
     Type: AWS::ApiGateway::RestApi
     Properties:

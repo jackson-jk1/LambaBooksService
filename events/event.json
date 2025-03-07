@@ -1,5 +1,5 @@
 {
-    "body": "{\"message\": \"hello world\"}",
+    "body": "{\"name\": \"O Senhor dos Anéis\", \"author\": \"J.R.R. Tolkien\", \"publishedDate\": \"1954-07-29\"}",
     "resource": "/{proxy+}",
     "path": "/path/to/resource",
     "httpMethod": "POST",

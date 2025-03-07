@@ -1,15 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <AWSProjectType>Lambda</AWSProjectType>
-    <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- Generate ready to run images during publishing to improve cold start time. -->
-    <PublishReadyToRun>true</PublishReadyToRun>
+      <TargetFramework>net8.0</TargetFramework>
+      
+      <!-- Garante que o código seja otimizado para iniciar mais rápido com ReadyToRun -->
+      <PublishReadyToRun>true</PublishReadyToRun> <!-- Remover se você não precisar dessa otimização extra -->
+
+      <!-- Habilita recursos do C# como usings implícitos e Nullable -->
+      <ImplicitUsings>enable</ImplicitUsings>
+      <Nullable>enable</Nullable>
+      
+      <!-- Gera arquivos de configuração do runtime necessários para o Lambda -->
+      <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+      
+      <!-- Evita gerar assemblies de referência, caso contrário, aumentaria o tamanho do pacote -->
+      <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+      
+      <!-- Especifica que o projeto é para Lambda, para facilitar a integração com a AWS -->
+      <AWSProjectType>Lambda</AWSProjectType>
+      
+      <!-- Garante que as dependências do projeto sejam copiadas para o diretório de saída -->
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+      
+      <!-- Se não quiser otimizar o código com ReadyToRun, pode remover a segunda linha. -->
+      <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
     <PackageReference Include="Amazon.Lambda.DynamoDBEvents" Version="3.1.1" />

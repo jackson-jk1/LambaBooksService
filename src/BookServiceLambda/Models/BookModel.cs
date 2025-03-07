@@ -6,7 +6,7 @@ namespace BookService.Models
     public class Book
     {
         [DynamoDBHashKey] // Chave primária
-        public string Id { get; set; } = Guid.NewGuid().ToString(); // ID automático
+        public string Id { get; set; }// ID automático
 
         [DynamoDBProperty]
         public string Name { get; set; }

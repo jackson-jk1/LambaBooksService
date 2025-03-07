@@ -8,5 +8,5 @@
   "profile": "",
   "region": "",
   "configuration": "Release",
-  "template": "template.yaml"
+  "template": "lambda-stack.yaml"
 }
