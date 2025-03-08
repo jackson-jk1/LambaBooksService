@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: "Deploy de um api gatway privado"
+Description: "Deploy de um API Gateway privado"
 
 Resources:
   # Criando a VPC
@@ -31,7 +31,6 @@ Resources:
     Properties:
       VpcId: !Ref MinhaVPC
 
-
   # Criando o Security Group para o API Gateway
   MeuSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -44,7 +43,7 @@ Resources:
           FromPort: '443'
           ToPort: '443'
           CidrIp: '10.0.0.0/16'  # Permite tráfego de dentro da VPC para a API Gateway
-          
+
   # Criando um VPC Endpoint para API Gateway privado
   VpcEndpointAPI:
     Type: AWS::EC2::VPCEndpoint
@@ -60,21 +59,137 @@ Resources:
       Tags:
         - Key: Name
           Value: vpc-endpoint-api-gateway
-  
+
+  # Role que permite a Lambda acessar o S3 e escrever logs no CloudWatch
+  LambdaExecutionRole2:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: MinhaRoleLambda2
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - lambda.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaS3AccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: "arn:aws:s3:::my-lambda-jk/*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:DescribeTable
+                  - dynamodb:UpdateItem 
+                  - dynamodb:DeleteItem 
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: "arn:aws:ssm:us-east-1:381645837582:parameter/BooksTable" 
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+
+  # Tabela DynamoDB para livros
+  LivroTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: "BooksTable"
+      AttributeDefinitions:
+        - AttributeName: "Id"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "Id"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  VpcEndpointDynamoDB:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MinhaVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
+      VpcEndpointType: Gateway  # Alterado para Gateway
+      RouteTableIds:
+        - !Ref MinhaTabelaDeRotas  # Associando à tabela de rotas
+      Tags:
+        - Key: Name
+          Value: vpc-endpoint-dynamodb
+
+  VpcEndpointSSM:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MinhaVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+      VpcEndpointType: Interface  # Mantido como Interface
+      SubnetIds:
+        - !Ref MinhaSubredePrivada
+      SecurityGroupIds:
+        - !Ref MeuSecurityGroup  # Security Group associado ao Endpoint SSM
+      PrivateDnsEnabled: true  # Habilita DNS privado
+      Tags:
+        - Key: Name
+          Value: vpc-endpoint-ssm
+
+
+  MinhaFuncaoLambda:
+    Type: AWS::Lambda::Function
+    DependsOn: LivroTable
+    Properties:
+      FunctionName: minha-funcao-lambda
+      Runtime: dotnet8
+      Handler: BookServiceLambda::BookService.Functions.BookHandler::Handler
+      Code:
+        S3Bucket: my-lambda-jk
+        S3Key: minha-lambda.zip
+      Role: !GetAtt LambdaExecutionRole2.Arn
+      MemorySize: 512
+      Timeout: 10
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref MeuSecurityGroup
+        SubnetIds:
+          - !Ref MinhaSubredePrivada
+
+  # Permissão para que o API Gateway invoque a Lambda
   ApiGatewayInvokeLambdaPolicy:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: ApiGatewayInvokeLambdaPolicy
       Roles: 
-        - MinhaRoleLambda
+        - MinhaRoleLambda2
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Action:
               - lambda:InvokeFunction
-            Resource: !ImportValue MinhaFuncaoLambdaArn
-            
+            Resource:  !GetAtt MinhaFuncaoLambda.Arn
+
+  # Criando a API REST privada
   MinhaApiRestPrivada:
     Type: AWS::ApiGateway::RestApi
     Properties:
@@ -90,12 +205,10 @@ Resources:
         Types:
           - PRIVATE
 
-          
-  # Permissão para que o API Gateway invoque a Lambda
   LambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: "lambda:InvokeFunction"
-      FunctionName: !ImportValue MinhaFuncaoLambdaArn
+      FunctionName: !Ref MinhaFuncaoLambda
       Principal: "apigateway.amazonaws.com"
-
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MinhaApiRestPrivada}/*"

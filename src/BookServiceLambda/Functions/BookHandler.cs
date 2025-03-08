@@ -56,6 +56,7 @@ namespace BookService.Functions
                 Author = root.GetProperty("author").GetString(),
                 PublishedDate = root.GetProperty("publishedDate").GetDateTime()
             };
+            return new APIGatewayProxyResponse { StatusCode = 201, Body = JsonSerializer.Serialize(book) };
             if (book == null)
                 return new APIGatewayProxyResponse { StatusCode = 400, Body = "Dados inválidos" };
             
@@ -104,11 +105,6 @@ namespace BookService.Functions
             // Obtendo o parâmetro 'id' da rota
             if (!request.PathParameters.TryGetValue("id", out string bookId))
                 return new APIGatewayProxyResponse { StatusCode = 400, Body = "ID é obrigatório" };
-
-
-
-              using var jsonDocument = JsonDocument.Parse(body);
-            var root = jsonDocument.RootElement;
             
             // Deserializar o corpo da requisição
             var body = request.Body;
